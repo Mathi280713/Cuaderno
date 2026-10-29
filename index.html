@@ -1,0 +1,1009 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<meta name="description" content="Cuaderno virtual para programar en Python">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>PyCuaderno</title>
+<style>
+:root{
+  --bg:#0f172a; --surface:#16203a; --surface2:#1c2847; --code:#0a1020; --border:#27345a;
+  --text:#e8eefc; --muted:#8e9bbd; --accent:#ffd43b; --accent-ink:#1a1500; --blue:#4b8bbe;
+  --danger:#ff6b6b; --ok:#5ee0a0;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 var(--sans);min-height:100vh}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.wrap{max-width:780px;margin:0 auto;padding:0 14px}
+
+/* barra superior */
+.top{position:sticky;top:0;z-index:20;background:rgba(15,23,42,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;gap:8px;height:56px}
+.logo{font-weight:700;font-size:19px;letter-spacing:.2px;flex:1}
+.logo b{color:var(--accent)}
+.ib{background:none;border:0;border-radius:10px;width:40px;height:40px;display:grid;place-items:center;color:var(--text)}
+.ib:active{background:var(--surface2)}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:9px 14px;font-weight:600}
+.btn:active{background:var(--surface2)}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.sm{padding:6px 10px;font-size:14px;border-radius:10px}
+.btn[disabled]{opacity:.5;pointer-events:none}
+
+/* lista */
+.search{width:100%;margin:14px 0 6px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:11px 14px;color:var(--text);font:inherit}
+.card{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin:10px 0}
+.card:active{background:var(--surface2)}
+.card h3{margin:0 0 4px;font-size:17px}
+.card p{margin:0 0 8px;color:var(--muted);font-size:14px;white-space:pre-wrap;word-break:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-family:var(--mono)}
+.card small{color:var(--muted)}
+.empty{text-align:center;padding:48px 10px;color:var(--muted)}
+.empty h2{color:var(--text);margin:14px 0 6px}
+.snake{font-size:54px}
+
+/* editor */
+#title{flex:1;min-width:0;background:none;border:0;color:var(--text);font:700 18px var(--sans);padding:8px 4px;outline:none}
+#blocks{padding:12px 0 140px}
+.block{background:var(--surface);border:1px solid var(--border);border-radius:14px;margin:12px 0;overflow:hidden}
+.bh{display:flex;align-items:center;gap:2px;padding:4px 6px 4px 12px;border-bottom:1px solid var(--border);color:var(--muted);font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.6px}
+.bh .sp{flex:1}
+.bh .ib{width:34px;height:34px;color:var(--muted)}
+.bh .ib.on{color:var(--text)}
+.block textarea{display:block;width:100%;border:0;outline:none;resize:none;background:transparent;color:var(--text);padding:12px;font:16px/1.55 var(--sans);min-height:72px;overflow:hidden}
+.block.code{background:var(--code)}
+.block.code textarea{font:15px/1.55 var(--mono);tab-size:4;white-space:pre;overflow-x:auto;overflow-y:hidden;color:#d6e2ff}
+.sym{display:flex;gap:6px;overflow-x:auto;padding:6px 10px;border-top:1px solid var(--border);scrollbar-width:none}
+.sym::-webkit-scrollbar{display:none}
+.sym button{flex:none;min-width:38px;height:34px;border:1px solid var(--border);background:var(--surface);border-radius:8px;font:15px var(--mono);color:var(--text)}
+.sym button:active{background:var(--surface2)}
+.out{margin:0;padding:10px 12px;border-top:1px dashed var(--border);background:#070b16;color:#b8f5d0;font:13.5px/1.5 var(--mono);white-space:pre-wrap;word-break:break-word;max-height:260px;overflow:auto}
+.out.err{color:#ffb3b3}
+.drawwrap{padding:10px}
+canvas.pad{display:block;width:100%;aspect-ratio:1000/560;background:#fff;border-radius:10px;touch-action:none;cursor:crosshair}
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:0 10px 10px}
+.sw{width:28px;height:28px;border-radius:50%;border:2px solid var(--border);padding:0}
+.sw.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+select,.field{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:9px 10px;font:inherit}
+.field{width:100%}
+
+/* barra inferior */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(15,23,42,.96);backdrop-filter:blur(8px);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom)}
+.bar .wrap{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding-top:6px;padding-bottom:6px}
+.bar button{background:none;border:0;border-radius:12px;padding:6px 2px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;font-weight:600;color:var(--muted)}
+.bar button:active{background:var(--surface2);color:var(--text)}
+.bar button.hl{color:var(--accent)}
+
+/* modal */
+.ov{position:fixed;inset:0;z-index:50;background:rgba(3,6,15,.66);display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:640px;max-height:92vh;overflow:auto;background:var(--bg);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+@media(min-width:700px){.ov{align-items:center}.sheet{border-radius:20px}}
+.sheet h2{margin:0 0 12px;font-size:19px;display:flex;align-items:center}
+.sheet h2 span{flex:1}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.row>*{flex:1 1 auto}
+.sheet label{display:block;color:var(--muted);font-size:13px;margin:12px 0 4px;font-weight:600}
+.sheet textarea.res{width:100%;min-height:170px;background:var(--code);color:#d6e2ff;border:1px solid var(--border);border-radius:12px;padding:12px;font:14.5px/1.5 var(--mono);resize:vertical;tab-size:4}
+.prev{display:block;max-width:100%;max-height:200px;margin:8px auto;border-radius:10px;border:1px solid var(--border);background:#fff}
+progress{width:100%;height:8px;accent-color:var(--accent)}
+.hint{color:var(--muted);font-size:13px;margin:6px 0}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#e8eefc;color:#0f172a;padding:10px 16px;border-radius:12px;font-weight:600;z-index:80;max-width:90vw;box-shadow:0 6px 24px rgba(0,0,0,.4)}
+.menu{position:absolute;right:10px;top:54px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:6px;z-index:40;min-width:200px;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.menu button{display:flex;gap:10px;align-items:center;width:100%;background:none;border:0;padding:10px;border-radius:8px;text-align:left}
+.menu button:active{background:var(--surface2)}
+.menu .red{color:var(--danger)}
+</style>
+</head>
+<body>
+
+<!-- ===== LISTA DE NOTAS ===== -->
+<section id="list">
+  <header class="top"><div class="wrap">
+    <div class="logo">Py<b>Cuaderno</b></div>
+    <button class="btn sm" id="install" hidden>Instalar</button>
+    <button class="btn pri sm" id="newNote"></button>
+  </div></header>
+  <main class="wrap">
+    <input class="search" id="q" type="search" placeholder="Buscar en tus notas…" autocomplete="off">
+    <div id="cards"></div>
+    <div class="empty" id="empty" hidden>
+      <div class="snake">🐍</div>
+      <h2>Tu cuaderno está vacío</h2>
+      <p>Escribe a mano, saca una foto a tus apuntes o genera código base de Python.</p>
+      <button class="btn pri" id="firstNote"></button>
+    </div>
+  </main>
+</section>
+
+<!-- ===== EDITOR ===== -->
+<section id="editor" hidden>
+  <header class="top"><div class="wrap">
+    <button class="ib" id="back" aria-label="Volver"></button>
+    <input id="title" placeholder="Título de la nota" autocomplete="off">
+    <button class="ib" id="more" aria-label="Más opciones"></button>
+  </div></header>
+  <main class="wrap"><div id="blocks"></div></main>
+  <nav class="bar"><div class="wrap">
+    <button id="aText"></button>
+    <button id="aCode"></button>
+    <button id="aDraw"></button>
+    <button id="aPhoto" class="hl"></button>
+    <button id="aGen" class="hl"></button>
+  </div></nav>
+</section>
+
+<script>
+'use strict';
+/* ============ utilidades ============ */
+const $ = (s, r = document) => r.querySelector(s);
+function h(tag, props = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (v == null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k === 'value') e.value = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if (v === true) e.setAttribute(k, '');
+    else e.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) {
+    if (c == null || c === false) continue;
+    e.append(c.nodeType ? c : document.createTextNode(c));
+  }
+  return e;
+}
+const ICON = {
+  back: 'M19 12H5M12 19l-7-7 7-7', plus: 'M12 5v14M5 12h14', text: 'M4 7V4h16v3M9 20h6M12 4v16',
+  code: 'm16 18 6-6-6-6M8 6l-6 6 6 6', pen: 'M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z',
+  camera: 'M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
+  zap: 'M13 2 3 14h9l-1 8 10-12h-9l1-8z', trash: 'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6',
+  copy: 'M9 9h11v11H9zM5 15H4V4h11v1', play: 'M6 3l14 9-14 9z', up: 'm18 15-6-6-6 6', down: 'm6 9 6 6 6-6',
+  dl: 'M12 3v12M7 10l5 5 5-5M5 21h14', undo: 'M3 7v6h6M3 13a9 9 0 1 0 3-7',
+  scan: 'M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8h8M7 12h10M7 16h6',
+  more: 'M12 12h.01M19 12h.01M5 12h.01', x: 'M18 6 6 18M6 6l12 12', eraser: 'm7 21-4-4 12-12 6 6-10 10zM7 21h13',
+};
+function icon(n) {
+  const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('class', 'i');
+  const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  p.setAttribute('d', ICON[n]); s.append(p); return s;
+}
+const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+const debounce = (f, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => f(...a), ms); }; };
+function toast(msg) {
+  const t = h('div', { class: 'toast' }, msg); document.body.append(t); setTimeout(() => t.remove(), 2200);
+}
+function autosize(t) { t.style.height = 'auto'; t.style.height = Math.max(t.scrollHeight, 72) + 'px'; }
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    if (document.querySelector('script[data-src="' + src + '"]')) return res();
+    const s = h('script', { src, 'data-src': src });
+    s.onload = res; s.onerror = () => rej(new Error('No se pudo cargar ' + src + '. ¿Tienes internet?'));
+    document.head.append(s);
+  });
+}
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); toast('Copiado'); }
+  catch { const a = h('textarea', { value: t }); document.body.append(a); a.select(); document.execCommand('copy'); a.remove(); toast('Copiado'); }
+}
+function download(name, text, type = 'text/plain') {
+  const a = h('a', { href: URL.createObjectURL(new Blob([text], { type: type + ';charset=utf-8' })), download: name });
+  document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+
+/* ============ almacenamiento (IndexedDB) ============ */
+const DB = {
+  db: null, mem: new Map(),
+  async open() {
+    try {
+      await new Promise((res, rej) => {
+        const r = indexedDB.open('pycuaderno', 1);
+        r.onupgradeneeded = () => r.result.createObjectStore('notes', { keyPath: 'id' });
+        r.onsuccess = () => { this.db = r.result; res(); };
+        r.onerror = () => rej(r.error);
+      });
+    } catch { this.db = null; }
+  },
+  req(mode, fn) {
+    return new Promise((res, rej) => {
+      const r = fn(this.db.transaction('notes', mode).objectStore('notes'));
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    });
+  },
+  all() { return this.db ? this.req('readonly', s => s.getAll()) : Promise.resolve([...this.mem.values()]); },
+  put(n) { if (!this.db) { this.mem.set(n.id, n); return Promise.resolve(); } return this.req('readwrite', s => s.put(n)); },
+  del(id) { if (!this.db) { this.mem.delete(id); return Promise.resolve(); } return this.req('readwrite', s => s.delete(id)); },
+};
+
+/* ============ estado ============ */
+const state = { notes: [], cur: null, q: '' };
+const saveCur = debounce(async () => {
+  if (!state.cur) return;
+  state.cur.updated = Date.now();
+  try { await DB.put(state.cur); } catch { toast('No se pudo guardar'); }
+}, 350);
+const isEmpty = n => !n.title.trim() && n.blocks.every(b => b.type === 'draw' ? !b.content : !b.content.trim());
+const noteTitle = n => n.title.trim() || (n.blocks.find(b => b.type !== 'draw' && b.content.trim())?.content.trim().split('\n')[0].slice(0, 60)) || 'Sin título';
+
+/* ============ lista ============ */
+function renderList() {
+  const box = $('#cards'); box.replaceChildren();
+  const q = state.q.trim().toLowerCase();
+  const items = state.notes
+    .filter(n => !q || (n.title + ' ' + n.blocks.map(b => b.type === 'draw' ? '' : b.content).join(' ')).toLowerCase().includes(q))
+    .sort((a, b) => b.updated - a.updated);
+  $('#empty').hidden = state.notes.length > 0;
+  $('.search').hidden = state.notes.length === 0;
+  for (const n of items) {
+    const first = n.blocks.find(b => b.type !== 'draw' && b.content.trim());
+    const cnt = t => n.blocks.filter(b => b.type === t).length;
+    const meta = [cnt('text') && cnt('text') + ' texto', cnt('code') && cnt('code') + ' código', cnt('draw') && cnt('draw') + ' dibujo']
+      .filter(Boolean).join(' · ');
+    box.append(h('button', { class: 'card', onclick: () => openNote(n) },
+      h('h3', {}, noteTitle(n)),
+      first ? h('p', {}, first.content.trim().slice(0, 160)) : null,
+      h('small', {}, new Date(n.updated).toLocaleDateString('es', { day: 'numeric', month: 'short' }) + (meta ? ' · ' + meta : ''))));
+  }
+}
+async function newNote() {
+  const n = { id: uid(), title: '', blocks: [{ id: uid(), type: 'text', content: '' }], created: Date.now(), updated: Date.now() };
+  state.notes.push(n); await DB.put(n); openNote(n, true);
+}
+
+/* ============ navegación ============ */
+function openNote(n, focus) {
+  state.cur = n;
+  $('#list').hidden = true; $('#editor').hidden = false;
+  $('#title').value = n.title;
+  renderBlocks();
+  history.pushState({ note: n.id }, '');
+  window.scrollTo(0, 0);
+  if (focus) setTimeout(() => $('#blocks textarea')?.focus(), 50);
+}
+async function doClose() {
+  closeMenu();
+  const n = state.cur; state.cur = null;
+  $('#editor').hidden = true; $('#list').hidden = false;
+  if (n && isEmpty(n)) { state.notes = state.notes.filter(x => x !== n); await DB.del(n.id); }
+  renderList(); window.scrollTo(0, 0);
+}
+function closeNote() { if (history.state && history.state.note) history.back(); else doClose(); }
+window.addEventListener('popstate', () => { if (state.cur) doClose(); });
+
+/* ============ bloques ============ */
+function addBlock(type, content = '', at) {
+  const b = { id: uid(), type, content };
+  const arr = state.cur.blocks;
+  if (at == null || at > arr.length) at = arr.length;
+  arr.splice(at, 0, b); saveCur(); renderBlocks();
+  const el = document.querySelector('[data-id="' + b.id + '"]');
+  if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); if (type !== 'draw') setTimeout(() => el.querySelector('textarea')?.focus(), 150); }
+  return b;
+}
+function moveBlock(i, d) {
+  const a = state.cur.blocks, j = i + d; if (j < 0 || j >= a.length) return;
+  [a[i], a[j]] = [a[j], a[i]]; saveCur(); renderBlocks();
+}
+function delBlock(i) {
+  const b = state.cur.blocks[i];
+  if ((b.content && b.content.length > 0) && !confirm('¿Borrar este bloque?')) return;
+  state.cur.blocks.splice(i, 1);
+  if (!state.cur.blocks.length) state.cur.blocks.push({ id: uid(), type: 'text', content: '' });
+  saveCur(); renderBlocks();
+}
+function renderBlocks() {
+  const box = $('#blocks'); box.replaceChildren();
+  state.cur.blocks.forEach((b, i) => box.append(blockEl(b, i)));
+  requestAnimationFrame(() => box.querySelectorAll('textarea').forEach(autosize));
+}
+const LABEL = { text: 'Texto', code: 'Python', draw: 'Escritura manual' };
+function blockHeader(b, i, extra = []) {
+  const n = state.cur.blocks.length;
+  return h('div', { class: 'bh' }, LABEL[b.type], h('span', { class: 'sp' }), extra,
+    h('button', { class: 'ib', 'aria-label': 'Subir', onclick: () => moveBlock(i, -1), ...(i === 0 ? { disabled: true } : {}) }, icon('up')),
+    h('button', { class: 'ib', 'aria-label': 'Bajar', onclick: () => moveBlock(i, 1), ...(i === n - 1 ? { disabled: true } : {}) }, icon('down')),
+    h('button', { class: 'ib', 'aria-label': 'Borrar', onclick: () => delBlock(i) }, icon('trash')));
+}
+function blockEl(b, i) {
+  if (b.type === 'draw') return drawBlock(b, i);
+  const isCode = b.type === 'code';
+  const ta = h('textarea', {
+    value: b.content, spellcheck: isCode ? 'false' : 'true', autocapitalize: isCode ? 'off' : 'sentences',
+    autocorrect: isCode ? 'off' : 'on', placeholder: isCode ? '# escribe tu código Python…' : 'Escribe tus apuntes…',
+    oninput: () => { b.content = ta.value; autosize(ta); saveCur(); },
+  });
+  if (!isCode) return h('div', { class: 'block', 'data-id': b.id }, blockHeader(b, i), ta);
+
+  const out = h('pre', { class: 'out' }); out.hidden = true;
+  ta.addEventListener('keydown', e => {
+    if (e.key === 'Tab') { e.preventDefault(); insertAt(ta, '    '); }
+    else if (e.key === 'Enter' && !e.isComposing) {
+      const before = ta.value.slice(0, ta.selectionStart);
+      const line = before.slice(before.lastIndexOf('\n') + 1);
+      let ind = line.match(/^\s*/)[0]; if (/:\s*$/.test(line)) ind += '    ';
+      e.preventDefault(); insertAt(ta, '\n' + ind);
+    }
+  });
+  const syms = ['Tab', ':', '(', ')', '[', ']', '{', '}', '"', "'", '=', '_', '#', '.', ',', '+', '-', '*', '/', '%', '<', '>', '!', '\\'];
+  const bar = h('div', { class: 'sym' }, syms.map(s => h('button', {
+    type: 'button', 'aria-label': s,
+    onpointerdown: e => e.preventDefault(),
+    onclick: () => { ta.focus(); insertAt(ta, s === 'Tab' ? '    ' : pair(s)); if (pair(s).length === 2) ta.setSelectionRange(ta.selectionStart - 1, ta.selectionStart - 1); },
+  }, s)));
+  const extra = [
+    h('button', { class: 'ib on', 'aria-label': 'Ejecutar', onclick: () => runCode(b.content, out) }, icon('play')),
+    h('button', { class: 'ib on', 'aria-label': 'Copiar', onclick: () => copyText(b.content) }, icon('copy')),
+  ];
+  return h('div', { class: 'block code', 'data-id': b.id }, blockHeader(b, i, extra), ta, bar, out);
+}
+function pair(s) { return { '(': '()', '[': '[]', '{': '{}', '"': '""', "'": "''" }[s] || s; }
+function insertAt(ta, str) { ta.setRangeText(str, ta.selectionStart, ta.selectionEnd, 'end'); ta.dispatchEvent(new Event('input')); }
+
+/* ============ escritura manual ============ */
+function drawBlock(b, i) {
+  const canvas = h('canvas', { class: 'pad', width: 1000, height: 560 });
+  const ctx = canvas.getContext('2d');
+  let color = '#111827', size = 5, erase = false, drawing = false, last = null; const hist = [];
+  function paper() { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 1000, 560); }
+  function restore(url, cb) {
+    paper(); if (!url) return cb && cb();
+    const im = new Image(); im.onload = () => { ctx.drawImage(im, 0, 0, 1000, 560); cb && cb(); }; im.src = url;
+  }
+  restore(b.content);
+  const commit = () => { b.content = canvas.toDataURL('image/png'); saveCur(); };
+  const pos = e => { const r = canvas.getBoundingClientRect(); return { x: (e.clientX - r.left) * 1000 / r.width, y: (e.clientY - r.top) * 560 / r.height }; };
+  const w = e => (erase ? size * 5 : size) * (e.pointerType === 'pen' && e.pressure ? 0.4 + e.pressure : 1);
+  function seg(a, c, e) {
+    ctx.strokeStyle = erase ? '#fff' : color; ctx.lineWidth = w(e); ctx.lineCap = ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(c.x, c.y); ctx.stroke();
+  }
+  canvas.addEventListener('pointerdown', e => {
+    e.preventDefault(); canvas.setPointerCapture(e.pointerId);
+    hist.push(canvas.toDataURL()); if (hist.length > 20) hist.shift();
+    drawing = true; last = pos(e); seg({ x: last.x - 0.1, y: last.y }, last, e);
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (!drawing) return; e.preventDefault();
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    for (const ev of (evs.length ? evs : [e])) { const p = pos(ev); seg(last, p, ev); last = p; }
+  });
+  const end = () => { if (drawing) { drawing = false; commit(); } };
+  canvas.addEventListener('pointerup', end); canvas.addEventListener('pointercancel', end);
+
+  const cols = ['#111827', '#1d4ed8', '#dc2626', '#15803d'];
+  const sw = cols.map(c => h('button', {
+    class: 'sw' + (c === color ? ' on' : ''), style: 'background:' + c, 'aria-label': 'Color',
+    onclick: () => { color = c; erase = false; refresh(); },
+  }));
+  const eraser = h('button', { class: 'btn sm', onclick: () => { erase = !erase; refresh(); } }, icon('eraser'), 'Borrador');
+  function refresh() { sw.forEach((s, k) => s.classList.toggle('on', !erase && cols[k] === color)); eraser.style.borderColor = erase ? 'var(--accent)' : ''; }
+  const sizeSel = h('select', { 'aria-label': 'Grosor', onchange: e => { size = +e.target.value; } },
+    h('option', { value: 3 }, 'Fino'), h('option', { value: 5, selected: true }, 'Medio'), h('option', { value: 9 }, 'Grueso'));
+  const tools = h('div', { class: 'tools' }, sw, eraser, sizeSel,
+    h('button', { class: 'btn sm', onclick: () => { if (hist.length) restore(hist.pop(), commit); } }, icon('undo'), 'Deshacer'),
+    h('button', { class: 'btn sm', onclick: () => { hist.push(canvas.toDataURL()); paper(); commit(); } }, 'Limpiar'),
+    h('button', { class: 'btn sm pri', onclick: () => openOCR({ src: canvas.toDataURL('image/png'), at: i + 1, hint: true }) }, icon('scan'), 'Pasar a texto'));
+  return h('div', { class: 'block', 'data-id': b.id }, blockHeader(b, i), h('div', { class: 'drawwrap' }, canvas), tools);
+}
+
+/* ============ modal ============ */
+function modal(title, ...body) {
+  const close = () => { ov.remove(); document.removeEventListener('keydown', esc); };
+  const esc = e => { if (e.key === 'Escape') close(); };
+  const sheet = h('div', { class: 'sheet' }, h('h2', {}, h('span', {}, title), h('button', { class: 'ib', onclick: close, 'aria-label': 'Cerrar' }, icon('x'))), body);
+  const ov = h('div', { class: 'ov', onclick: e => { if (e.target === ov) close(); } }, sheet);
+  document.addEventListener('keydown', esc); document.body.append(ov);
+  return close;
+}
+
+/* ============ foto → texto (OCR) ============ */
+async function toCanvas(src) {
+  const url = src instanceof Blob ? URL.createObjectURL(src) : src;
+  const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('No se pudo abrir la imagen')); i.src = url; });
+  let w = img.naturalWidth, hh = img.naturalHeight; const s = Math.min(1, 2200 / Math.max(w, hh));
+  w = Math.round(w * s); hh = Math.round(hh * s);
+  const c = h('canvas', { width: w, height: hh }); const x = c.getContext('2d');
+  x.fillStyle = '#fff'; x.fillRect(0, 0, w, hh); x.drawImage(img, 0, 0, w, hh);
+  if (src instanceof Blob) URL.revokeObjectURL(url);
+  // escala de grises + estirar contraste (ayuda mucho con fotos de hojas)
+  const d = x.getImageData(0, 0, w, hh), a = d.data, hist = new Uint32Array(256);
+  for (let k = 0; k < a.length; k += 4) { const g = (a[k] * .299 + a[k + 1] * .587 + a[k + 2] * .114) | 0; a[k] = a[k + 1] = a[k + 2] = g; hist[g]++; }
+  const tot = w * hh; let lo = 0, hi = 255, acc = 0;
+  while (lo < 255 && acc + hist[lo] < tot * .02) acc += hist[lo++];
+  acc = 0; while (hi > 0 && acc + hist[hi] < tot * .02) acc += hist[hi--];
+  if (hi - lo < 25) { lo = 0; hi = 255; }
+  const k2 = 255 / (hi - lo);
+  for (let k = 0; k < a.length; k += 4) { const v = Math.max(0, Math.min(255, (a[k] - lo) * k2)); a[k] = a[k + 1] = a[k + 2] = v; }
+  x.putImageData(d, 0, 0); return c;
+}
+const cleanCode = t => t.replace(/[“”„]/g, '"').replace(/[‘’`´]/g, "'").replace(/[ \t]+$/gm, '').replace(/ /g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+
+function openOCR(opts = {}) {
+  let busy = false;
+  const prev = h('img', { class: 'prev' }); prev.hidden = true;
+  const fCam = h('input', { type: 'file', accept: 'image/*', capture: 'environment', hidden: true });
+  const fGal = h('input', { type: 'file', accept: 'image/*', hidden: true });
+  const lang = h('select', { class: 'field', id: 'ocrlang' },
+    h('option', { value: 'eng' }, 'Código / inglés (recomendado para Python)'),
+    h('option', { value: 'spa+eng' }, 'Español + inglés'), h('option', { value: 'spa' }, 'Solo español'));
+  const prog = h('progress', { max: 1, value: 0 }); prog.hidden = true;
+  const status = h('div', { class: 'hint' });
+  const res = h('textarea', { class: 'res', placeholder: 'Aquí aparecerá el texto reconocido. Puedes corregirlo antes de insertarlo.', spellcheck: 'false' });
+  let lastSrc = null;
+  const close = modal('Foto → texto',
+    h('div', { class: 'row' },
+      h('button', { class: 'btn pri', onclick: () => fCam.click() }, icon('camera'), 'Tomar foto'),
+      h('button', { class: 'btn', onclick: () => fGal.click() }, 'Galería')),
+    fCam, fGal, prev,
+    opts.hint ? h('div', { class: 'hint' }, 'Tip: la letra de mano se reconoce mejor si es clara, en letra de molde y con buen tamaño. Revisa el resultado antes de insertarlo.') : null,
+    h('label', { for: 'ocrlang' }, 'Idioma del texto'), lang, h('div', { style: 'height:8px' }), prog, status,
+    h('label', {}, 'Texto reconocido'), res,
+    h('div', { class: 'row' },
+      h('button', { class: 'btn', onclick: () => { if (!res.value.trim()) return toast('No hay texto'); addBlock('text', res.value.trim(), opts.at); close(); } }, icon('text'), 'Insertar como texto'),
+      h('button', { class: 'btn pri', onclick: () => { if (!res.value.trim()) return toast('No hay texto'); addBlock('code', cleanCode(res.value), opts.at); close(); } }, icon('code'), 'Insertar como código')),
+    h('div', { class: 'row' },
+      h('button', { class: 'btn sm', onclick: () => lastSrc ? run(lastSrc) : toast('Primero elige una imagen') }, 'Reintentar con este idioma'),
+      h('button', { class: 'btn sm', onclick: () => copyText(res.value) }, icon('copy'), 'Copiar')));
+
+  async function run(src) {
+    if (busy) return; busy = true; lastSrc = src;
+    prev.src = src instanceof Blob ? URL.createObjectURL(src) : src; prev.hidden = false;
+    prog.hidden = false; prog.value = 0; status.textContent = 'Preparando imagen…';
+    try {
+      const canvas = await toCanvas(src);
+      status.textContent = 'Descargando motor de reconocimiento (solo la primera vez)…';
+      await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
+      const worker = await Tesseract.createWorker(lang.value, 1, {
+        logger: m => {
+          if (m.status === 'recognizing text') { prog.value = m.progress; status.textContent = 'Reconociendo… ' + Math.round(m.progress * 100) + '%'; }
+          else if (m.status) { status.textContent = m.status.replace(/_/g, ' ') + '…'; }
+        },
+      });
+      await worker.setParameters({ preserve_interword_spaces: '1' });
+      const { data } = await worker.recognize(canvas);
+      await worker.terminate();
+      res.value = data.text.trimEnd();
+      status.textContent = res.value.trim() ? 'Listo. Revisa el texto y elige cómo insertarlo.' : 'No se encontró texto. Prueba con más luz o más cerca.';
+    } catch (err) { status.textContent = 'Error: ' + (err.message || err); }
+    prog.hidden = true; busy = false;
+  }
+  fCam.onchange = fGal.onchange = e => { const f = e.target.files[0]; if (f) run(f); e.target.value = ''; };
+  if (opts.src) run(opts.src);
+  else if (opts.autoPick) setTimeout(() => fCam.click(), 200);
+}
+
+/* ============ generador de código Python ============ */
+const GEN = [
+{ g: 'Básico', id: 'variables', t: 'Variables', v: [['nombre', 'Nombre de la variable', 'edad'], ['valor', 'Valor inicial', '25']], c: v =>
+`# Variables en Python
+${v.nombre} = ${v.valor}
+print(${v.nombre})
+print(type(${v.nombre}))
+
+# Asignación múltiple
+a, b, c = 1, 2, 3
+
+# Intercambio de valores
+a, b = b, a
+
+# Constante (por convención, en mayúsculas)
+PI = 3.14159
+` },
+{ g: 'Básico', id: 'tipos', t: 'Tipos de datos', v: [], c: () =>
+`# Tipos de datos básicos
+entero = 10          # int
+decimal = 3.14       # float
+texto = "Hola"       # str
+verdadero = True     # bool
+nada = None          # NoneType
+complejo = 2 + 3j    # complex
+
+for dato in (entero, decimal, texto, verdadero, nada, complejo):
+    print(f"{dato!r:>10} -> {type(dato).__name__}")
+
+# Conversión de tipos
+print(int("42") + 1)
+print(float("2.5") * 2)
+print(str(99) + " puntos")
+print(bool(0), bool("hola"))
+` },
+{ g: 'Básico', id: 'input', t: 'Entrada y salida', v: [['var', 'Variable para el dato', 'nombre']], c: v =>
+`# Pedir datos al usuario y mostrarlos
+${v.var} = input("Escribe tu ${v.var}: ")
+print(f"Hola, {${v.var}}!")
+
+# Convertir la entrada a número
+numero = int(input("Dame un número: "))
+print("El doble es", numero * 2)
+
+# Opciones de print
+print("a", "b", "c", sep="-", end="!\\n")
+` },
+{ g: 'Básico', id: 'strings', t: 'Strings (texto)', v: [['var', 'Variable', 'texto']], c: v =>
+`${v.var} = "  Python es genial  "
+
+print(len(${v.var}))
+print(${v.var}.strip())
+print(${v.var}.upper(), ${v.var}.lower(), ${v.var}.title())
+print(${v.var}.replace("genial", "increíble"))
+print(${v.var}.strip().split(" "))
+print("-".join(["a", "b", "c"]))
+print(${v.var}.strip()[0:6])       # rebanado (slicing)
+print(${v.var}.find("es"))
+print("genial" in ${v.var})
+
+nombre, edad = "Ana", 30
+print(f"{nombre} tiene {edad} años")
+print(f"Pi con 2 decimales: {3.14159:.2f}")
+` },
+{ g: 'Estructuras', id: 'lista', t: 'Listas', v: [['var', 'Nombre de la lista', 'frutas']], c: v =>
+`${v.var} = ["manzana", "pera", "uva"]
+
+${v.var}.append("mango")      # agregar al final
+${v.var}.insert(1, "kiwi")    # insertar en una posición
+${v.var}.remove("pera")       # quitar por valor
+ultimo = ${v.var}.pop()       # quitar y devolver el último
+
+print(${v.var}[0], ${v.var}[-1], ${v.var}[0:2])
+print(len(${v.var}), "uva" in ${v.var})
+
+${v.var}.sort()
+for i, item in enumerate(${v.var}, start=1):
+    print(i, item)
+` },
+{ g: 'Estructuras', id: 'tupla', t: 'Tuplas', v: [['var', 'Nombre de la tupla', 'punto']], c: v =>
+`${v.var} = (3, 4)          # las tuplas no se pueden modificar
+
+x, y = ${v.var}             # desempaquetado
+print(x, y)
+print(${v.var}[0], len(${v.var}))
+
+# Función que devuelve varios valores (en realidad una tupla)
+def min_max(numeros):
+    return min(numeros), max(numeros)
+
+menor, mayor = min_max([4, 9, 1, 7])
+print(menor, mayor)
+` },
+{ g: 'Estructuras', id: 'dict', t: 'Diccionarios', v: [['var', 'Nombre del diccionario', 'persona']], c: v =>
+`${v.var} = {"nombre": "Ana", "edad": 30}
+
+${v.var}["ciudad"] = "San José"      # agregar o modificar
+print(${v.var}["nombre"])
+print(${v.var}.get("telefono", "sin dato"))   # valor por defecto
+del ${v.var}["edad"]
+
+for clave, valor in ${v.var}.items():
+    print(clave, "->", valor)
+
+print(list(${v.var}.keys()))
+print(list(${v.var}.values()))
+print("nombre" in ${v.var})
+` },
+{ g: 'Estructuras', id: 'set', t: 'Conjuntos (set)', v: [], c: () =>
+`a = {1, 2, 3, 3, 2}      # los duplicados desaparecen
+b = {3, 4, 5}
+
+a.add(10)
+a.discard(1)
+
+print(a | b)   # unión
+print(a & b)   # intersección
+print(a - b)   # diferencia
+print(3 in a)
+
+# Quitar duplicados de una lista
+unicos = list(set([1, 2, 2, 3, 3, 3]))
+print(unicos)
+` },
+{ g: 'Control de flujo', id: 'if', t: 'Condicionales (if / elif / else)', v: [['var', 'Variable a evaluar', 'nota']], c: v =>
+`${v.var} = 85
+
+if ${v.var} >= 90:
+    print("Excelente")
+elif ${v.var} >= 70:
+    print("Aprobado")
+else:
+    print("Reprobado")
+
+# Operadores lógicos
+edad = 20
+tiene_carnet = True
+if edad >= 18 and tiene_carnet:
+    print("Puede conducir")
+
+# Condicional en una línea
+estado = "mayor" if edad >= 18 else "menor"
+print(estado)
+` },
+{ g: 'Control de flujo', id: 'for', t: 'Bucle for', v: [['n', 'Cuántas vueltas', '5']], c: v =>
+`for i in range(${v.n}):
+    print("Vuelta", i)
+
+# range(inicio, fin, paso)
+for i in range(10, 0, -2):
+    print(i)
+
+# Recorrer una lista
+colores = ["rojo", "verde", "azul"]
+for color in colores:
+    print(color)
+
+# break y continue
+for n in range(1, 10):
+    if n == 3:
+        continue      # salta esta vuelta
+    if n == 7:
+        break         # termina el bucle
+    print(n)
+` },
+{ g: 'Control de flujo', id: 'while', t: 'Bucle while', v: [['limite', 'Límite', '5']], c: v =>
+`contador = 0
+while contador < ${v.limite}:
+    print("contador =", contador)
+    contador += 1
+
+# Bucle infinito controlado
+while True:
+    respuesta = input("Escribe 'salir' para terminar: ")
+    if respuesta == "salir":
+        break
+print("Fin")
+` },
+{ g: 'Control de flujo', id: 'match', t: 'match / case (Python 3.10+)', v: [['var', 'Variable', 'comando']], c: v =>
+`${v.var} = "inicio"
+
+match ${v.var}:
+    case "inicio":
+        print("Empezando")
+    case "pausa" | "stop":
+        print("Detenido")
+    case _:
+        print("Comando desconocido")
+` },
+{ g: 'Funciones', id: 'funcion', t: 'Funciones', v: [['nombre', 'Nombre de la función', 'saludar'], ['param', 'Parámetro', 'nombre']], c: v =>
+`def ${v.nombre}(${v.param}, saludo="Hola"):
+    """Devuelve un saludo para ${v.param}."""
+    return f"{saludo}, {${v.param}}!"
+
+print(${v.nombre}("Ana"))
+print(${v.nombre}("Luis", saludo="Buenas"))
+
+# *args y **kwargs
+def sumar(*numeros):
+    return sum(numeros)
+
+def mostrar(**datos):
+    for k, v in datos.items():
+        print(k, "=", v)
+
+print(sumar(1, 2, 3, 4))
+mostrar(nombre="Ana", edad=30)
+` },
+{ g: 'Funciones', id: 'lambda', t: 'lambda, map, filter, sorted', v: [], c: () =>
+`doble = lambda x: x * 2
+print(doble(5))
+
+numeros = [1, 2, 3, 4, 5, 6]
+print(list(map(lambda x: x ** 2, numeros)))
+print(list(filter(lambda x: x % 2 == 0, numeros)))
+
+personas = [("Ana", 30), ("Luis", 25), ("Eva", 35)]
+print(sorted(personas, key=lambda p: p[1]))
+print(max(personas, key=lambda p: p[1]))
+` },
+{ g: 'Funciones', id: 'comp', t: 'Comprensión de listas', v: [], c: () =>
+`cuadrados = [n ** 2 for n in range(1, 6)]
+pares = [n for n in range(20) if n % 2 == 0]
+palabras = ["hola", "mundo"]
+mayus = [p.upper() for p in palabras]
+
+# De diccionario y de conjunto
+cuadrado_de = {n: n ** 2 for n in range(5)}
+letras = {c for c in "banana"}
+
+print(cuadrados, pares, mayus)
+print(cuadrado_de, letras)
+` },
+{ g: 'POO', id: 'clase', t: 'Clases y objetos', v: [['clase', 'Nombre de la clase', 'Persona'], ['attr', 'Atributo principal', 'nombre']], c: v =>
+`class ${v.clase}:
+    """Representa un/a ${v.clase}."""
+
+    def __init__(self, ${v.attr}, edad=0):
+        self.${v.attr} = ${v.attr}
+        self.edad = edad
+
+    def presentarse(self):
+        return f"Soy {self.${v.attr}} y tengo {self.edad} años"
+
+    def cumplir_anios(self):
+        self.edad += 1
+
+    def __str__(self):
+        return f"${v.clase}({self.${v.attr}}, {self.edad})"
+
+
+obj = ${v.clase}("Ana", 30)
+print(obj.presentarse())
+obj.cumplir_anios()
+print(obj)
+` },
+{ g: 'POO', id: 'herencia', t: 'Herencia', v: [['base', 'Clase base', 'Animal'], ['hija', 'Clase hija', 'Perro']], c: v =>
+`class ${v.base}:
+    def __init__(self, nombre):
+        self.nombre = nombre
+
+    def hablar(self):
+        return "..."
+
+
+class ${v.hija}(${v.base}):
+    def __init__(self, nombre, raza):
+        super().__init__(nombre)
+        self.raza = raza
+
+    def hablar(self):          # sobrescribe el método del padre
+        return "¡Guau!"
+
+
+mascota = ${v.hija}("Rex", "Labrador")
+print(mascota.nombre, mascota.raza, mascota.hablar())
+print(isinstance(mascota, ${v.base}))
+` },
+{ g: 'POO', id: 'dataclass', t: 'dataclass', v: [['clase', 'Nombre de la clase', 'Producto']], c: v =>
+`from dataclasses import dataclass, field
+
+
+@dataclass
+class ${v.clase}:
+    nombre: str
+    precio: float
+    etiquetas: list = field(default_factory=list)
+
+    def con_iva(self, iva=0.13):
+        return round(self.precio * (1 + iva), 2)
+
+
+p = ${v.clase}("Cuaderno", 1500.0)
+print(p)
+print(p.con_iva())
+` },
+{ g: 'Errores y archivos', id: 'try', t: 'Manejo de errores (try / except)', v: [], c: () =>
+`try:
+    numero = int(input("Número: "))
+    resultado = 10 / numero
+except ValueError:
+    print("Eso no es un número")
+except ZeroDivisionError:
+    print("No se puede dividir entre cero")
+else:
+    print("Resultado:", resultado)      # solo si no hubo error
+finally:
+    print("Esto siempre se ejecuta")
+
+# Lanzar tus propios errores
+def edad_valida(edad):
+    if edad < 0:
+        raise ValueError("La edad no puede ser negativa")
+    return edad
+` },
+{ g: 'Errores y archivos', id: 'archivos', t: 'Leer y escribir archivos', v: [['archivo', 'Nombre del archivo', 'datos.txt']], c: v =>
+`# Escribir
+with open("${v.archivo}", "w", encoding="utf-8") as f:
+    f.write("Primera línea\\n")
+    f.write("Segunda línea\\n")
+
+# Leer todo
+with open("${v.archivo}", "r", encoding="utf-8") as f:
+    contenido = f.read()
+print(contenido)
+
+# Leer línea por línea
+with open("${v.archivo}", encoding="utf-8") as f:
+    for linea in f:
+        print(linea.strip())
+
+# Agregar al final
+with open("${v.archivo}", "a", encoding="utf-8") as f:
+    f.write("Otra línea\\n")
+` },
+{ g: 'Errores y archivos', id: 'json', t: 'JSON', v: [['archivo', 'Archivo', 'datos.json']], c: v =>
+`import json
+
+datos = {"nombre": "Ana", "notas": [90, 85, 100], "activa": True}
+
+# Diccionario -> texto JSON
+texto = json.dumps(datos, indent=2, ensure_ascii=False)
+print(texto)
+
+# Guardar en archivo
+with open("${v.archivo}", "w", encoding="utf-8") as f:
+    json.dump(datos, f, indent=2, ensure_ascii=False)
+
+# Leer desde archivo
+with open("${v.archivo}", encoding="utf-8") as f:
+    cargado = json.load(f)
+print(cargado["notas"])
+` },
+{ g: 'Avanzado', id: 'imports', t: 'Módulos e imports', v: [], c: () =>
+`import math
+import random
+from datetime import datetime, timedelta
+from collections import Counter
+
+print(math.sqrt(16), math.pi)
+print(random.randint(1, 6), random.choice(["a", "b", "c"]))
+
+ahora = datetime.now()
+print(ahora.strftime("%d/%m/%Y %H:%M"))
+print(ahora + timedelta(days=7))
+
+print(Counter("abracadabra").most_common(2))
+` },
+{ g: 'Avanzado', id: 'decorador', t: 'Decoradores', v: [['nombre', 'Nombre del decorador', 'cronometro']], c: v =>
+`import time
+from functools import wraps
+
+
+def ${v.nombre}(func):
+    @wraps(func)
+    def envoltura(*args, **kwargs):
+        inicio = time.perf_counter()
+        resultado = func(*args, **kwargs)
+        print(f"{func.__name__} tardó {time.perf_counter() - inicio:.4f} s")
+        return resultado
+    return envoltura
+
+
+@${v.nombre}
+def calcular(n):
+    return sum(i * i for i in range(n))
+
+
+print(calcular(100000))
+` },
+{ g: 'Avanzado', id: 'generador', t: 'Generadores (yield)', v: [['nombre', 'Nombre', 'cuenta_regresiva']], c: v =>
+`def ${v.nombre}(n):
+    while n > 0:
+        yield n
+        n -= 1
+
+
+for x in ${v.nombre}(5):
+    print(x)
+
+# Expresión generadora: no crea la lista completa en memoria
+suma = sum(i * i for i in range(1_000_000))
+print(suma)
+` },
+{ g: 'Avanzado', id: 'main', t: 'Programa principal (main)', v: [], c: () =>
+`def main():
+    print("Programa iniciado")
+    # tu código aquí
+
+
+if __name__ == "__main__":
+    main()
+` },
+];
+
+function openGen(at) {
+  const groups = [...new Set(GEN.map(x => x.g))];
+  const sel = h('select', { class: 'field', id: 'gsel' }, groups.map(g => h('optgroup', { label: g }, GEN.filter(x => x.g === g).map(x => h('option', { value: x.id }, x.t)))));
+  const fields = h('div'); const res = h('textarea', { class: 'res', spellcheck: 'false', style: 'min-height:260px' });
+  let cur = GEN[0], vals = {};
+  function build() {
+    cur = GEN.find(x => x.id === sel.value); vals = {}; fields.replaceChildren();
+    for (const [k, label, def] of cur.v) {
+      vals[k] = def;
+      fields.append(h('label', {}, label), h('input', { class: 'field', value: def, autocapitalize: 'off', spellcheck: 'false', oninput: e => { vals[k] = e.target.value.trim() || def; gen(); } }));
+    }
+    gen();
+  }
+  const gen = () => { res.value = cur.c(vals); };
+  sel.onchange = build;
+  const close = modal('Generar código base',
+    h('div', { class: 'hint' }, 'Elige un concepto de Python, personaliza los nombres y ábrelo como bloque de código.'),
+    h('label', { for: 'gsel' }, 'Concepto'), sel, fields,
+    h('label', {}, 'Código (puedes editarlo)'), res,
+    h('div', { class: 'row' },
+      h('button', { class: 'btn pri', onclick: () => { addBlock('code', res.value.trimEnd(), at); close(); } }, icon('plus'), 'Insertar en la nota'),
+      h('button', { class: 'btn', onclick: () => copyText(res.value) }, icon('copy'), 'Copiar')));
+  build();
+}
+
+/* ============ ejecutar Python (Pyodide, se descarga solo si lo usas) ============ */
+let pyP = null;
+function getPy() {
+  if (!pyP) pyP = (async () => { await loadScript('https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js'); return await loadPyodide(); })().catch(e => { pyP = null; throw e; });
+  return pyP;
+}
+async function runCode(code, out) {
+  if (!code.trim()) return toast('No hay código para ejecutar');
+  out.hidden = false; out.className = 'out'; out.textContent = 'Cargando Python… (la primera vez tarda unos segundos)';
+  let buf = '';
+  try {
+    const py = await getPy();
+    py.setStdout({ batched: s => { buf += s + '\n'; } });
+    py.setStderr({ batched: s => { buf += s + '\n'; } });
+    await py.runPythonAsync(code);
+    out.textContent = buf || '(sin salida)';
+  } catch (err) {
+    out.className = 'out err';
+    const msg = String(err.message || err).split('\n').filter(l => l.trim()).slice(-6).join('\n');
+    out.textContent = (buf ? buf + '\n' : '') + msg;
+  }
+}
+
+/* ============ menú y exportación ============ */
+let menuEl = null;
+function closeMenu() { menuEl?.remove(); menuEl = null; }
+function openMenu() {
+  if (menuEl) return closeMenu();
+  const item = (ic, label, fn, cls) => h('button', { class: cls, onclick: () => { closeMenu(); fn(); } }, icon(ic), label);
+  menuEl = h('div', { class: 'menu' },
+    item('dl', 'Exportar código (.py)', exportPy), item('dl', 'Exportar nota (.md)', exportMd),
+    item('trash', 'Borrar nota', async () => {
+      if (!confirm('¿Borrar esta nota para siempre?')) return;
+      const n = state.cur; state.notes = state.notes.filter(x => x !== n); await DB.del(n.id); state.cur = null; closeNote();
+    }, 'red'));
+  $('#editor .top').append(menuEl);
+}
+const fname = () => (noteTitle(state.cur).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'nota');
+function exportPy() {
+  const parts = state.cur.blocks.filter(b => b.type !== 'draw' && b.content.trim())
+    .map(b => b.type === 'code' ? b.content : b.content.trim().split('\n').map(l => '# ' + l).join('\n'));
+  if (!parts.length) return toast('No hay nada que exportar');
+  download(fname() + '.py', parts.join('\n\n\n') + '\n', 'text/x-python');
+}
+function exportMd() {
+  const n = state.cur; const F = '```';
+  const parts = ['# ' + noteTitle(n)];
+  for (const b of n.blocks) {
+    if (b.type === 'text' && b.content.trim()) parts.push(b.content.trim());
+    else if (b.type === 'code' && b.content.trim()) parts.push(F + 'python\n' + b.content.trimEnd() + '\n' + F);
+    else if (b.type === 'draw' && b.content) parts.push('![dibujo](' + b.content + ')');
+  }
+  download(fname() + '.md', parts.join('\n\n') + '\n', 'text/markdown');
+}
+
+/* ============ arranque ============ */
+function wire() {
+  const plus = () => icon('plus');
+  $('#newNote').append(plus(), 'Nueva'); $('#firstNote').append(plus(), 'Crear mi primera nota');
+  $('#back').append(icon('back')); $('#more').append(icon('more'));
+  const tb = (id, ic, label) => $(id).append(icon(ic), label);
+  tb('#aText', 'text', 'Texto'); tb('#aCode', 'code', 'Código'); tb('#aDraw', 'pen', 'A mano'); tb('#aPhoto', 'camera', 'Foto→texto'); tb('#aGen', 'zap', 'Generar');
+  $('#newNote').onclick = $('#firstNote').onclick = newNote;
+  $('#back').onclick = closeNote; $('#more').onclick = openMenu;
+  $('#q').oninput = e => { state.q = e.target.value; renderList(); };
+  $('#title').oninput = e => { state.cur.title = e.target.value; saveCur(); };
+  $('#aText').onclick = () => addBlock('text'); $('#aCode').onclick = () => addBlock('code'); $('#aDraw').onclick = () => addBlock('draw');
+  $('#aPhoto').onclick = () => openOCR({ at: undefined, autoPick: false });
+  $('#aGen').onclick = () => openGen();
+  document.addEventListener('click', e => { if (menuEl && !e.target.closest('.menu') && !e.target.closest('#more')) closeMenu(); });
+  // instalación como app
+  let deferred = null;
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; $('#install').hidden = false; });
+  $('#install').onclick = async () => { if (!deferred) return; deferred.prompt(); await deferred.userChoice; deferred = null; $('#install').hidden = true; };
+  window.addEventListener('appinstalled', () => { $('#install').hidden = true; });
+}
+(async function init() {
+  wire();
+  await DB.open();
+  try { state.notes = await DB.all(); } catch { state.notes = []; }
+  renderList();
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>
